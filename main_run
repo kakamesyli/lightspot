@@ -1,0 +1,66 @@
+function [] = main_run()
+%MAIN_RUN 此处显示有关此函数的摘要
+%   此处显示详细说明
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{
+pixel_gauge = 5.5e-3;
+amp = 1200/33;
+fd = 33;
+fs = 1200;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+apha = 0;apha = apha*pi/180/3600;
+diff_x = 0e-3;     diff_y = 0e-3;
+beta_x = 0;beta_x = beta_x*pi/180/3600;    beta_y = 0;beta_y = beta_y*pi/180/3600;
+gamma_x = 0;gamma_x = gamma_x*pi/180/3600;    gamma_y = 0;gamma_y = gamma_y*pi/180/3600;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+a11 = [cos(apha),-sin(apha),diff_x/amp/pixel_gauge+beta_x*fd/pixel_gauge;sin(apha),cos(apha),diff_y/amp/pixel_gauge+beta_y*fd/pixel_gauge;0,0,1] * [a1';1];
+a21 = [cos(apha),-sin(apha),diff_x/amp/pixel_gauge+beta_x*fd/pixel_gauge;sin(apha),cos(apha),diff_y/amp/pixel_gauge+beta_y*fd/pixel_gauge;0,0,1] * [a2';1];
+a31 = [cos(apha),-sin(apha),diff_x/amp/pixel_gauge+beta_x*fd/pixel_gauge;sin(apha),cos(apha),diff_y/amp/pixel_gauge+beta_y*fd/pixel_gauge;0,0,1] * [a3';1];
+glass_in = [a1',a2',a3'];
+glass1_in = [a11,a21,a31];
+m1_in = m_in + [beta_x+gamma_x,beta_y+gamma_y].*fd/pixel_gauge;
+s_m1 = [cos(apha),-sin(apha),diff_x/amp/pixel_gauge;sin(apha),cos(apha),diff_y/amp/pixel_gauge;0,0,1] * [s_m';1];
+t = ([s_m1(1),s_m1(2)] - s_m).*amp;
+s1_in = s_in + t + [gamma_x,gamma_y].*fs/pixel_gauge;
+%}
+eps_in = 1e-9;
+init_glass_in = [0,0,0];
+init_all_in = [0,0,0,0,0,0];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+mode = 3;
+switch mode
+    case 1 %输入两个状态模拟坐标
+        %状态1               %状态2
+        a1 = [250,0];       a11 = [251,1];
+        a2 = [-250,0];      a21 = [-249,1];
+        a3 = [0,-200];      a31 = [1,-199];
+        m_in = [0,0];       m1_in = [0,0];
+        s_in = [50,0];       s1_in = [50+1*1200/33,1*1200/33];
+        glass_in = [a1',a2',a3'];   glass1_in = [a11',a21',a31'];               
+    case 2 %输入一个状态模拟坐标
+        a1 = [250,0];
+        a2 = [-250,0];
+        a3 = [0,-200];
+        glass_in = [a1',a2',a3']; 
+        m_in = [0,0];
+        s_in = [0,0];
+        va = vara(1,1,1,1,1,1,1);
+        spot = create_spot(glass_in,m_in,s_in,va);
+        glass1_in = spot.point1_in.glass;
+        m1_in = spot.point1_in.m;
+        s1_in = spot.point1_in.s;
+    case 3 %输入两个状态真实坐标
+        a1 = [1953.19,119.04];       a11 = [1953.33,119.13];
+        a2 = [128.02,1928.37];       a21 = [128.15,1928.45];
+        a3 = [1764.02,1755.71];      a31 = [1764.14,1755.83];
+        m_in = [1005+0 , 995+0];       m1_in = [1005+0 , 995+0];
+        s_in = [875+0 , 930+0];        s1_in = [875-0 , 930-0];
+        glass_in = [a1',a2',a3'];         glass1_in = [a11',a21',a31']; 
+end
+a = deform_cal();
+glass_out = a.cal_glass(glass_in,glass1_in,init_glass_in,eps_in);
+c_xin = glass_out(2);
+c_yin = glass_out(3);
+all_out = a.cal_all(glass_out(1),c_xin,c_yin,glass_in,m_in,m1_in,s_in,s1_in,init_all_in,eps_in);
+a.final_output(glass_out,all_out);
+end
